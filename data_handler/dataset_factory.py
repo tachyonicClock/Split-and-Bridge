@@ -11,3 +11,9 @@ class DatasetFactory:
             return data.CIFAR100()
         elif name == "TinyImagenet":
             return data.TinyImagenet()
+        elif name == "CIFAR10":
+            return data.CIFAR10()
+        elif name == "FMNIST":
+            return data.FMNIST()
+        elif name == "CORE50":
+            return data.CORe50_NC(mini=True)

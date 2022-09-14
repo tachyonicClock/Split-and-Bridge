@@ -1,4 +1,5 @@
 import argparse
+import json
 import torch
 import torch.utils.data as td
 import numpy as np
@@ -17,7 +18,8 @@ if __name__ == '__main__':
 
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
     args = arguments.get_args()
-    log_name = '{}_{}_base_{}_step_{}_batch_{}_epoch_{}'.format(
+    log_name = '{}_{}_{}_base_{}_step_{}_batch_{}_epoch_{}'.format(
+        args.name,
         args.trainer,
         args.seed,
         args.base_classes,
@@ -40,7 +42,7 @@ if __name__ == '__main__':
     np.random.seed(seed)
 
     dataset = data_handler.DatasetFactory.get_dataset(args.dataset)
-    if args.dataset == 'CIFAR100':
+    if args.dataset in ['CIFAR100', 'CIFAR10']:
         loader = None
     else:
         loader = dataset.loader
@@ -155,7 +157,10 @@ if __name__ == '__main__':
             myTrainer.get_optimizer(optimizer)
             myTrainer.update_frozen_model()
 
-        print("SEED:", seed, "MEMORY_BUDGET:", m, "tasknum:", t)
+        print("=======================================")
+        print("Task: ", t)
+        print("SEED:", seed, "MEMORY_BUDGET:", m)
+        print("=======================================")
 
         # Add new classes to the train, and test iterator
         lr = args.lr
@@ -185,9 +190,10 @@ if __name__ == '__main__':
 
             train_1 = t_classifier.evaluate(myTrainer.model, evaluator_iterator, 0, train_end)
             print("*********CURRENT EPOCH********** : %d" % epoch)
+            print("WEIGHT SPARSIFICATION PHASE")
             print("Train Classifier top-1 (Softmax): %0.2f" % train_1)
 
-            if epoch % 5 == (4):
+            if epoch % 5 == (4) or epoch == total_epochs - 1:
                 if t == 0:
                     test_1 = t_classifier.evaluate(myTrainer.model, test_iterator, test_start, test_end,
                                            mode='test', step_size=args.step_size)
@@ -236,7 +242,7 @@ if __name__ == '__main__':
         #explicitly split ###################################################################################
         if t > 0 and balance_factor != 1:
             myTrainer.split()
-            print(myTrainer.model)
+            # print(myTrainer.model)
 
         # separated learning (split learning) #########################################################
         if t > 0 and balance_factor != 1:
@@ -260,9 +266,10 @@ if __name__ == '__main__':
 
             train_1 = t_classifier.evaluate(myTrainer.model, evaluator_iterator, 0, train_end)
             print("*********CURRENT EPOCH********** : %d" % epoch)
+            print("SEPARATED LEARNING PHASE (SPLIT LEARNING)")
             print("Train Classifier top-1 (Softmax): %0.2f" % train_1)
 
-            if epoch % 5 == (4):
+            if epoch % 5 == (4) or epoch == total_epochs - 1:
 
                 if t == 0:
                     test_1 = t_classifier.evaluate(myTrainer.model, test_iterator, test_start, test_end,
@@ -333,9 +340,11 @@ if __name__ == '__main__':
 
             train_1 = t_classifier.evaluate(myTrainer.model, evaluator_iterator, 0, train_end)
             print("*********CURRENT EPOCH********** : %d" % epoch)
+            print("BRIDGE PHASE")
+
             print("Train Classifier top-1 (Softmax): %0.2f" % train_1)
 
-            if epoch % 5 == (4):
+            if epoch % 5 == (4) or epoch == total_epochs - 1:
 
                 if t == 0:
                     test_1 = t_classifier.evaluate(myTrainer.model, test_iterator, test_start, test_end,
@@ -385,16 +394,12 @@ if __name__ == '__main__':
             correct, stat = t_classifier.evaluate(myTrainer.model, test_iterator,
                                                   test_start, test_end,
                                                   mode='test', step_size=args.step_size)
-            print("Test Classifier top-1 (Softmax, all): %0.2f" % correct['all'])
-            print("Test Classifier top-1 (Softmax, pre): %0.2f" % correct['pre'])
-            print("Test Classifier top-1 (Softmax, new): %0.2f" % correct['new'])
-            print("Test Classifier top-1 (Softmax, intra_pre): %0.2f" % correct['intra_pre'])
-            print("Test Classifier top-1 (Softmax, intra_new): %0.2f" % correct['intra_new'])
+            print("Experience Test Classifier top-1 (Softmax, all): %0.2f" % correct['all'])
+            print("Experience Test Classifier top-1 (Softmax, pre): %0.2f" % correct['pre'])
+            print("Experience Test Classifier top-1 (Softmax, new): %0.2f" % correct['new'])
+            print("Experience Test Classifier top-1 (Softmax, intra_pre): %0.2f" % correct['intra_pre'])
+            print("Experience Test Classifier top-1 (Softmax, intra_new): %0.2f" % correct['intra_new'])
 
-        if t > 0:
-            correct, stat = t_classifier.evaluate(myTrainer.model, test_iterator,
-                                                  test_start, test_end,
-                                                  mode='test', step_size=args.step_size)
             for head in ['all', 'pre', 'new', 'intra_pre', 'intra_new']:
                 results['all']['correct'].append(correct[head])
             results['all']['stat'].append(stat['all'])
@@ -402,7 +407,7 @@ if __name__ == '__main__':
         else:
             test_1 = t_classifier.evaluate(myTrainer.model, test_iterator, test_start, test_end,
                                            mode='test', step_size=args.step_size)
-            print("Test Classifier top-1 (Softmax): %0.2f" % test_1)
+            print("Experience Test Classifier top-1 (Softmax): %0.2f" % test_1)
             for head in ['all']:
                 results[head]['correct'].append(test_1)
 
@@ -416,13 +421,13 @@ if __name__ == '__main__':
             start = end
             end += args.step_size
 
-        print(results)
-
-        f = open('./result_data/{}_task_{}_output.txt'.format(log_name, t), "w")
-        f.write(str(results))
+        if isinstance(results['task_soft_1'], np.ndarray):
+            results['task_soft_1'] = results['task_soft_1'].tolist()
+        f = open('./result_data/{}_task_{}_output.json'.format(log_name, t), "w")
+        json.dump(results, f)
         f.close()
 
-        torch.save(myModel.state_dict(), "C:/Users/admin/Desktop/Split_and_Bridge/models/trained_ model/{}_task_{}.pt".format(log_name, t))
+        torch.save(myModel.state_dict(), "models/trained_model/{}_task_{}.pt".format(log_name, t))
 
         # incremental task ############################################################################
         if t != tasknum - 1:

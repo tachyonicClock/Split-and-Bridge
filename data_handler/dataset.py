@@ -1,6 +1,9 @@
+import os
 from torchvision import datasets, transforms
 import torch
 import numpy as np
+
+DATASET_DIR = os.environ['DATASETS']
 
 # To incdude a new Dataset, inherit from Dataset and add all the Dataset specific parameters here.
 # Goal : Remove any data specific parameters from the rest of the code
@@ -77,14 +80,64 @@ class CIFAR100(Dataset):
             transforms.Normalize(mean, std),
             ])
 
-        train_dataset = datasets.CIFAR100("../dat", train=True, transform=self.train_transform, download=True)
+        train_dataset = datasets.CIFAR100(DATASET_DIR, train=True, transform=self.train_transform, download=True)
         self.train_data = train_dataset.data
         self.train_labels = np.array(train_dataset.targets)
-        test_dataset = datasets.CIFAR100("../dat", train=False, transform=self.test_transform, download=True)
+        test_dataset = datasets.CIFAR100(DATASET_DIR, train=False, transform=self.test_transform, download=True)
         self.test_data = test_dataset.data
         self.test_labels = np.array(test_dataset.targets)
 
 
+class CIFAR10(Dataset):
+    def __init__(self):
+        super().__init__(10, "CIFAR10")
+
+        mean = [0.5071, 0.4867, 0.4408]
+        std = [0.2675, 0.2565, 0.2761]
+
+        self.train_transform = transforms.Compose([
+            transforms.RandomCrop(32, padding=4),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize(mean, std),
+        ])
+
+        self.test_transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean, std),
+            ])
+
+        train_dataset = datasets.CIFAR10(DATASET_DIR, train=True, transform=self.train_transform, download=True)
+        self.train_data = train_dataset.data
+        self.train_labels = np.array(train_dataset.targets)
+        test_dataset = datasets.CIFAR10(DATASET_DIR, train=False, transform=self.test_transform, download=True)
+        self.test_data = test_dataset.data
+        self.test_labels = np.array(test_dataset.targets)
+
+class FMNIST(Dataset):
+    def __init__(self):
+        super().__init__(10, "FMNIST")
+
+        self.train_transform = transforms.Compose([
+            transforms.Lambda(lambda x: x.repeat(3, 1, 1)),
+            transforms.Resize(32),
+            transforms.RandomHorizontalFlip(),
+            transforms.Lambda(lambda x: x.float()),
+        ])
+
+        self.test_transform = transforms.Compose([
+            transforms.Lambda(lambda x: x.repeat(3, 1, 1) ),
+            transforms.Resize(32),
+            transforms.Lambda(lambda x: x.float()),
+        ])
+
+        train_dataset = datasets.FashionMNIST(DATASET_DIR, train=True, transform=self.train_transform, download=True)
+        self.train_data = train_dataset.data
+        self.train_labels = np.array(train_dataset.targets)
+        test_dataset = datasets.FashionMNIST(DATASET_DIR, train=False, transform=self.test_transform, download=True)
+        self.test_data = test_dataset.data
+        self.test_labels = np.array(test_dataset.targets)
+        self.loader = lambda x : x
 
 class TinyImagenet(Dataset):
     def __init__(self):
@@ -130,5 +183,51 @@ class TinyImagenet(Dataset):
         self.train_data = np.stack(self.train_data, axis=0)
         self.test_data = np.stack(self.test_data, axis=0)
 
-        
 
+class CORe50_NC(Dataset):
+    """Class incremental CORe50 dataset"""
+    def __init__(self, mini=False):
+        super().__init__(50, "CORe50_NC")
+        from avalanche.benchmarks.datasets import CORe50Dataset
+
+
+        self.train_transform = transforms.Compose([
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor()
+        ])
+
+        self.test_transform = transforms.Compose([
+            transforms.ToTensor()
+        ])
+
+        train_dataset = CORe50Dataset(DATASET_DIR, train=True, transform=self.train_transform, download=True, mini=mini)
+        # train_dataset.
+        self.train_data = train_dataset
+        self.train_labels = np.array(train_dataset.targets)
+        test_dataset = CORe50Dataset(DATASET_DIR, train=False, transform=self.test_transform, download=True, mini=mini)
+        self.test_data = test_dataset
+        self.test_labels = np.array(test_dataset.targets)
+        if mini:
+            self.loader = lambda path: train_dataset.loader(str(f"{DATASET_DIR}/core50_32x32/{path}"))
+        else:
+            self.loader = lambda path: train_dataset.loader(str(f"{DATASET_DIR}/core50_128x128/{path}"))
+
+        self.train_data = []
+        self.train_labels = []
+        self.test_data = []
+        self.test_labels = []
+
+        for i in range(len(train_dataset)):
+            path = train_dataset.paths[i]
+            target = train_dataset.targets[i]
+            self.train_data.append(path)
+            self.train_labels.append(target)
+
+        for i in range(len(test_dataset)):
+            path = test_dataset.paths[i]
+            target = test_dataset.targets[i]
+            self.test_data.append(path)
+            self.test_labels.append(target)
+
+        self.train_data = np.stack(self.train_data, axis=0)
+        self.test_data = np.stack(self.test_data, axis=0)

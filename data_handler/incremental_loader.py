@@ -181,7 +181,6 @@ class IncrementalLoader(td.Dataset):
         
         if self.transform is not None:
             img = self.transform(img)
-
         return img, self.labelsNormal[index]
 
 class ResultLoader(td.Dataset):
@@ -244,5 +243,12 @@ def make_ResultLoaders(data, labels, classes, step_size, transform = None, loade
     return loaders
 
 def iterator(dataset_loader, batch_size, shuffle=False, drop_last = False):
-    kwargs = {'num_workers': 0, 'pin_memory': False}
-    return torch.utils.data.DataLoader(dataset_loader, batch_size = batch_size, shuffle= shuffle, drop_last=drop_last, **kwargs)
+    return torch.utils.data.DataLoader(
+        dataset_loader, 
+        batch_size = batch_size, 
+        shuffle= shuffle, 
+        drop_last=drop_last,
+        num_workers=0,
+        pin_memory=False,
+        generator=torch.Generator(device="cuda")
+    )

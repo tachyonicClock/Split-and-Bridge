@@ -126,7 +126,7 @@ class GDA():
             euclidean = torch.eye(512).cuda()
 
             if self.option == 'Mahalanobis':
-                for data, target in tqdm(loader):
+                for data, target in loader:
                     data, target = data.cuda(), target.long().cuda()
                     _, features = model.forward(data, feature_return=True)
 

@@ -6,7 +6,7 @@ class ModelFactory():
     @staticmethod
     def get_model(dataset, num_class):
         
-        if dataset == 'CIFAR100':
+        if dataset in ['CIFAR100', 'CIFAR10', 'FMNIST', 'CORE50', "LCORE50"]:
             
             import networks.MyNetwork_split as res
             return res.network('CIFAR',32,num_class)

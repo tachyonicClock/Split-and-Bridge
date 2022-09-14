@@ -1,3 +1,44 @@
+Welcome. This is a fork of [Split and Bridge](https://github.com/bigdata-inha/Split-and-Bridge) 
+used to compare against **"SurpriseNet"**
+
+Set the `DATASETS` environment variable appropriately
+
+```sh
+export DATSETS="/home/username/datasets"
+```
+
+> If you need the CORe50 dataset. You will need to install [Avalanche](https://avalanche.continualai.org/).
+
+The following configuration was used. 
+
+- S&B uses three phases of `nepochs` for each task. This makes S&B 3 times slower to train. To speed things up we use roughly a third the number of epochs.
+- Default S&B architecture
+
+
+```sh
+# nepochs 20/3 = 6.66 -> 7
+python3 main.py --dataset FMNIST --trainer split  --base-classes 2 --step-size 2 --lr 0.01 --batch-size 64 --memory-budget 1000  --rho 1 --nepochs 7 --name S_FMNIST
+
+# nepochs50/3 = 16.66 -> 17
+python3 main.py --dataset CIFAR10 --trainer split --lr 0.01 --batch-size 64 --memory-budget 1000 --base-classes 2 --step-size 2 --rho 1 --nepochs 17 --name S_CIFAR10
+
+# nepochs 100/3 = 33.33 -> 33
+python3 main.py --dataset CIFAR100 --trainer split --lr 0.01 --batch-size 64 --memory-budget 1000 --base-classes 10 --step-size 10 --rho 1 --nepochs 33 --name S_CIFAR100
+
+# nepochs 5/3 = 1.6 -> 2
+python3 main.py --dataset CORE50 --trainer split --lr 0.01 --batch-size 64 --memory-budget 1000 --base-classes 5 --step-size 5 --rho 1 --nepochs 2 --name S_CORE50
+```
+
+To run 10x runs of each of the experiments.
+```
+bash run_experiments.sh
+```
+
+
+## TODO Results Table
+
+
+
 # Split-and-Bridge
 Split-and-Bridge: Adaptable Class Incremental Learning within a Single Neural Network in AAAI2021 by Jong-Yeong Kim and Dong-Wan Choi
 

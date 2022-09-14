@@ -76,7 +76,7 @@ class Trainer(trainer.GenericTrainer):
         lamb = start / end
         print("lamb :{}".format(lamb))
 
-        for data, target in tqdm(self.train_data_iterator):
+        for data, target in self.train_data_iterator:
             data, target = data.cuda(), target.long().cuda()
 
             output = self.model(data)[:, :end]

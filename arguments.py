@@ -4,7 +4,7 @@ import argparse
 def get_args():
     parser = argparse.ArgumentParser(description='Split_and_Bridge')
     parser.add_argument('--dataset', default='', type=str, required=True,
-                        choices=['CIFAR100','TinyImagenet'],help='(default=%(default)s)')
+                        choices=['CIFAR100','TinyImagenet', 'CIFAR10', 'FMNIST', "CORE50"],help='(default=%(default)s)')
     parser.add_argument('--trainer', default='', type=str, required=True,
                         choices=['split','icarl', 'bic', 'wa', 'dd'],help='(default=%(default)s)')
     parser.add_argument('--batch-size', type=int, default=256, metavar='N',
@@ -27,8 +27,8 @@ def get_args():
     parser.add_argument('--rho', type=float, default=1, help='adaptive split hyperparameter')
     parser.add_argument('--seed', type=int, default=0,
                         help='Seeds values to be used; seed introduces randomness by changing order of classes')
-
-
+    parser.add_argument('--name', type=str, default=0,
+                        help='A name to identify the experiment')
     args=parser.parse_args()
 
     return args

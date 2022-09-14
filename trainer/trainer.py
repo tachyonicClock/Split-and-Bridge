@@ -106,7 +106,7 @@ class Trainer(GenericTrainer):
         
         self.model.train()
         print("Epochs %d"%epoch)
-        for data, y, target in tqdm(self.train_data_iterator):
+        for data, y, target in self.train_data_iterator:
             data, y, target = data.cuda(), y.cuda(), target.cuda()
             
             tasknum = self.train_data_iterator.dataset.t
